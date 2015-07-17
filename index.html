@@ -1,0 +1,130 @@
+
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>cellular automata</title>
+		<meta charset="utf-8">
+		<link rel="stylesheet" type="text/css" href="style.css">
+		  <script src="js/three.min.js"></script>
+		  <script src="js/OrbitControls.js"></script>
+	</head>
+	<body>
+		<script>
+
+			var camera, scene, renderer;
+			var plane;
+			var objects = [];
+
+			var mouse, raycaster = false;
+
+			scene = new THREE.Scene();
+			var WIDTH = window.innerWidth;
+			var HEIGHT = window.innerHeight;
+
+			renderer = new THREE.WebGLRenderer({antialias:true});
+			renderer.setSize(WIDTH,HEIGHT);
+			document.body.appendChild(renderer.domElement);
+
+			renderer.setClearColor(0xffffff);
+
+			var light = new THREE.PointLight(0xffffff);
+			light.position.set(0,0,0);
+			scene.add(light);
+
+			camera = new THREE.PerspectiveCamera(45, WIDTH/HEIGHT, 0.1, 20000);
+      camera.position.set(750,1000,2500);
+      scene.add(camera);
+
+			function init() {
+
+				//Resize the renderer based on browser window
+				window.addEventListener('resize',function() {
+						var WIDTH = window.innerWidth;
+						var HEIGHT = window.innerHeight;
+						renderer.setSize(WIDTH,HEIGHT);
+						camera.aspect = WIDTH/HEIGHT;
+						camera.updateProjectionMatrix();
+				});
+
+				var size = 1000, step = 50;
+
+				var geometry = new THREE.Geometry();
+
+				for ( var i = - size; i <= size; i += step ) {
+
+					geometry.vertices.push( new THREE.Vector3( - size, 0, i ) );
+					geometry.vertices.push( new THREE.Vector3(   size, 0, i ) );
+
+					geometry.vertices.push( new THREE.Vector3( i, 0, - size ) );
+					geometry.vertices.push( new THREE.Vector3( i, 0,   size ) );
+
+				}
+
+				var material = new THREE.LineBasicMaterial( { color: 0x000000, opacity: 0.2 } );
+
+				var line = new THREE.Line( geometry, material, THREE.LinePieces );
+				scene.add( line );
+
+				raycaster = new THREE.Raycaster();
+				mouse = new THREE.Vector2();
+
+				var geometry = new THREE.PlaneBufferGeometry( 2000, 2000 );
+				geometry.applyMatrix( new THREE.Matrix4().makeRotationX( - Math.PI / 2 ) );
+
+				plane = new THREE.Mesh( geometry );
+				plane.visible = false;
+				scene.add( plane );
+
+				objects.push( plane );
+
+				var material = new THREE.MeshBasicMaterial( { color: 0xff0000, wireframe: true } );
+
+				controls = new THREE.OrbitControls(camera,renderer.domElement);
+
+				document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+
+			}
+
+			function onDocumentMouseDown( event ) {
+
+				var cubeGeometry = new THREE.BoxGeometry( 50, 0, 50 );
+				var cubeMaterial = new THREE.MeshBasicMaterial( {color: 0x99CCFF} );
+
+				event.preventDefault();
+
+				mouse.x = ( event.clientX / renderer.domElement.width ) * 2 - 1;
+				mouse.y = - ( event.clientY / renderer.domElement.height ) * 2 + 1;
+
+				raycaster.setFromCamera( mouse, camera );
+
+				var intersects = raycaster.intersectObjects( objects );
+
+				if ( intersects.length > 0 ) {
+
+					var intersect = intersects[ 0 ];
+					var voxel = new THREE.Mesh( cubeGeometry, cubeMaterial );
+					voxel.position.copy( intersect.point ).add( intersect.face.normal );
+					voxel.position.divideScalar( 50 ).floor().multiplyScalar( 50 ).addScalar( 25 );
+					scene.add( voxel );
+
+					objects.push( voxel );
+
+					}
+
+					animate();
+
+				}
+
+			function animate() {
+				requestAnimationFrame(animate);
+				renderer.render(scene,camera);
+				controls.update();
+			}
+
+			init();
+			animate();
+
+		</script>
+
+	</body>
+</html>
